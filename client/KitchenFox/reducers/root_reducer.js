@@ -1,12 +1,12 @@
 import { combineReducers } from 'redux';
 import SessionReducer from './session_reducer';
 import InventoryReducer from './inventory_reducer';
-import CartReducer from './cart_reducer';
+import RecipeReducer from './recipe_reducer';
 
 const appReducer = combineReducers({
   session: SessionReducer,
   inventory: InventoryReducer,
-  cart: CartReducer,
+  recipes: RecipeReducer,
 });
 
 const RootReducer = (state, action) => {

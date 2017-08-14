@@ -11,27 +11,36 @@ import { text, pantryText } from '../../style/text';
 
 import { connect } from 'react-redux';
 import { logout } from '../../actions/session_actions';
-import { requestItems } from '../../actions/inventory_actions';
 import NavFooter from '../nav/footer';
 
 class PantryIndex extends React.Component {
   constructor(props) {
     super(props);
+    const component = Object.keys(this.props.inventory).length ? this.renderItems() : this.renderNoInventory();
     this.state = {
       name: '',
       quantity: 0,
       units: '',
+      items: '',
+      toRender: component,
     };
     this.renderItems = this.renderItems.bind(this);
     this.renderNoInventory = this.renderNoInventory.bind(this);
   }
 
-  componentDidMount() {
-    this.props.requestItems(this.props.session.token);
+  componentWillMount() {
+    // this.toRender = Object.keys(this.props.inventory).length ? this.renderItems() : this.renderNoInventory();
   }
 
   componentWillReceiveProps(newProps) {
-    // console.warn(JSON.stringify(newProps.inventory));
+    if (Object.keys(newProps.inventory).length !== Object.keys(this.props.inventory).length) {
+      this.selectToRender(newProps);
+    }
+  }
+
+  selectToRender(props = this.props) {
+    toRender = Object.keys(this.props.inventory).length ? this.renderItems(props) : this.renderNoInventory();
+    this.setState({ toRender: toRender })
   }
 
 
@@ -41,7 +50,7 @@ class PantryIndex extends React.Component {
 
   renderNoInventory() {
     const { navigate } = this.props.navigation;
-    return(
+    const items = (
       <Container>
         <ListItem itemDivider>
           <Text>There is nothing in your pantry or fridge</Text>
@@ -51,20 +60,22 @@ class PantryIndex extends React.Component {
         </Button>
       </Container>
     );
+    this.toRender = items;
+    return items
   }
 
-  renderItems() {
+  renderItems(props = this.props) {
     const { navigate } = this.props.navigation;
-    const allId = Object.keys(this.props.inventory);
+    const allId = Object.keys(props.inventory);
     const allItems = [];
     allId.forEach((id) => {
       let obj = {};
-      obj[`${id}`] = this.props.inventory[`${id}`];
+      obj[`${id}`] = props.inventory[`${id}`];
       allItems.push(obj);
     });
-
+    let items;
     if (allItems.length > 0) {
-      return (
+      items = (
         <View>
         {allItems.map((item, idx) =>
           <TouchableHighlight
@@ -81,13 +92,16 @@ class PantryIndex extends React.Component {
       </View>
       );
     } else if (allItems.length === 0) {
-      return this.renderNoInventory();
+      items = this.renderNoInventory();
     }
+    this.toRender = items;
+    return items
   }
 
   render() {
     const { navigate } = this.props.navigation;
     const fullName = `${this.props.session.first_name} ${this.props.session.last_name}`;
+    const items = this.state.items
     return (
       <Container>
          <View style={screen.container}>
@@ -95,7 +109,7 @@ class PantryIndex extends React.Component {
                 Your Ingredients
               </Text>
             <ScrollView>
-              {this.renderItems()}
+              {this.state.toRender}
             <Button
               style={button.sessionButton}
               onPress={(e) => this.handleLogout()}>
@@ -116,7 +130,6 @@ const mapStateToProps = ({ session, inventory }) => ({
 
 const mapDispatchToProps = dispatch => ({
   logout: () => dispatch(logout()),
-  requestItems: token => dispatch(requestItems(token))
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(PantryIndex);

@@ -9,7 +9,7 @@ import { text, pantryText } from '../../style/text';
 import dismissKeyboard from 'react-native/Libraries/Utilities/dismissKeyboard';
 
 import { connect } from 'react-redux';
-import { sendItems, requestItems } from '../../actions/inventory_actions';
+import { sendItems } from '../../actions/inventory_actions';
 
 class PantryItem extends React.Component {
   constructor(props) {
@@ -97,7 +97,6 @@ const mapStateToProps = ({ session, inventory }) => ({
 
 const mapDispatchToProps = dispatch => ({
   sendItems: (token, inventory) => dispatch(sendItems(token, inventory)),
-  requestItems: token => dispatch(requestItems(token))
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(PantryItem);

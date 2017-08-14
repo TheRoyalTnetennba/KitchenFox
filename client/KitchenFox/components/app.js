@@ -21,6 +21,15 @@ class App extends Component {
     this.props.loadLocalUser();
   }
 
+  componentWillReceiveProps(newProps) {
+    if (newProps.session.hasOwnProperty('token') &&
+      newProps.session.token.length &&
+      newProps.inventory &&
+      Object.keys(newProps.inventory).length === 0) {
+        this.props.requestItems(newProps.session.token);
+    }
+  }
+
   render() {
     if (this.props.session.token.length) {
       return (<Pantry />);

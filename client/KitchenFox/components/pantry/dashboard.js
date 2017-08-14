@@ -2,13 +2,12 @@ import React, { Component } from 'react';
 import { connect } from 'react-redux';
 import { StackNavigator } from 'react-navigation';
 import { Container, Content, List, ListItem, Text, Button, Icon, Spinner } from 'native-base';
-import { requestItems } from '../../actions/inventory_actions';
+import { View, ScrollView, TouchableHighlight } from 'react-native';
+
 import { button } from '../../style/button';
 import NavFooter from '../nav/footer';
 import RecipeCard from '../recipes/recipe_card';
-import { getRecipes } from '../../util/api_util';
-
-import { View, ScrollView, TouchableHighlight } from 'react-native';
+import { requestRecipes } from '../../actions/recipe_actions';
 import { screen, card, pantry } from '../../style/layout';
 import { text, pantryText } from '../../style/text';
 
@@ -28,31 +27,43 @@ class Dashboard extends React.Component {
     this.renderLowItems = this.renderLowItems.bind(this);
     this.renderNoInventory = this.renderNoInventory.bind(this);
     this.selectToRender = this.selectToRender.bind(this);
-    this.selectToRender();
   }
 
   componentWillMount() {
-    this.props.requestItems(this.props.session.token);
+    this.selectToRender();
   }
 
   componentWillReceiveProps(newProps) {
-    let items = Object.values(newProps.inventory);
-    let item = items[Math.floor(Math.random()*items.length)];
-    item = item.name;
-    item = item.split(', ').join('');
-    item = item.split(' ').join('');
-    getRecipes(1, item, newProps.session.token)
-      .then((res) => this.setState({recipes: JSON.parse(res._bodyText)}, () => this.selectToRender()))
+    // this has inv this no recipe
+    // this has no recipe new has recipe
+    let item;
+    if (Object.keys(this.props.inventory).length === 0 &&
+    Object.keys(newProps.inventory).length) {
+      this.selectToRender(newProps);
+      let names = Object.values(newProps.inventory);
+      let items = names.map(el => el.name);
+      item = items[Math.floor(Math.random()*items.length)];
+      item = item.split(', ').join('');
+      item = item.split(' ').join('');
+      this.props.requestRecipes(1, item, this.props.session.token)
+    } else if (Object.keys(this.props.recipes).length === 0 &&
+    Object.keys(newProps.recipes).length) {
+      this.selectToRender(newProps);
+    } else if (Object.keys(this.props.recipes).length === 0 &&
+    Object.keys(newProps.recipes).length) {
+      this.selectToRender(newProps);
+    } else {
+    }
   }
 
-  selectToRender () {
+  selectToRender (props = this.props) {
     const { navigate } = this.props.navigation;
     const allItems = [];
     const lowItems = [];
-    const allId = Object.keys(this.props.inventory);
+    const allId = Object.keys(props.inventory);
     allId.forEach((id) => {
       let obj = {};
-      const item = this.props.inventory[`${id}`];
+      const item = props.inventory[`${id}`];
       if (item['units'] == 'g' && item['quantity'] <= 100) {
         obj[`${id}`] = item;
         lowItems.push(obj);
@@ -65,24 +76,25 @@ class Dashboard extends React.Component {
     })
     let toRender;
     if (allItems.length > 0 && lowItems.length === 0) {
-      toRender = this.renderNoLowItem(allItems, lowItems);
+      toRender = this.renderNoLowItem(allItems, lowItems, props);
     } else if (lowItems.length > 0) {
-      toRender = this.renderLowItems(allItems, lowItems);
+      toRender = this.renderLowItems(allItems, lowItems, props);
     } else {
       toRender = this.renderNoInventory();
     }
     this.setState({ toRender: toRender });
   }
 
-  renderRecipe() {
-    if (this.state.recipes.length > 0) {
-      return (<RecipeCard recipeInfo={this.state.recipes[0]} />)
-    } else if (this.state.recipes.length === 0) {
+  renderRecipe(props = this.props) {
+    console.warn('render recipe', JSON.stringify(props.recipes));
+    if (Object.keys(props.recipes).length > 0) {
+      return (<RecipeCard recipeInfo={props.recipes} />)
+    } else if (Object.keys(props.recipes).length === 0) {
       return (<View><Spinner color='blue' /></View>)
     }
   }
 
-  renderNoLowItem(allItems, lowItems) {
+  renderNoLowItem(allItems, lowItems, props) {
     const { navigate } = this.props.navigation;
     return(
       <Container>
@@ -97,13 +109,13 @@ class Dashboard extends React.Component {
           <Text>Recipes you can make from your pantry</Text>
         </ListItem>
         <ListItem>
-          {this.renderRecipe()}
+          {this.renderRecipe(props)}
         </ListItem>
       </Container>
     )
   }
 
-  renderLowItems(allItems, lowItems) {
+  renderLowItems(allItems, lowItems, props) {
     const { navigate } = this.props.navigation;
     // let spinner;
     // if (this.state.recipes.length === 0 ) {
@@ -130,7 +142,7 @@ class Dashboard extends React.Component {
         </View>
         <View style={card.container}>
           <Text style={card.titleRecipe}>Recipe ideas</Text>
-          {this.renderRecipe()}
+          {this.renderRecipe(props)}
       </View>
       </View>
     );
@@ -168,14 +180,15 @@ class Dashboard extends React.Component {
   }
 }
 
-const mapStateToProps = ({ session, inventory }) => ({
+const mapStateToProps = ({ session, inventory, recipes }) => ({
   session,
-  inventory
+  inventory,
+  recipes,
 });
 
 const mapDispatchToProps = dispatch => ({
   // logout: () => dispatch(logout()),
-  requestItems: token => dispatch(requestItems(token)),
+  requestRecipes: (number, query, token) => dispatch(requestRecipes(number, query, token)),
 });
 
 export default connect(mapStateToProps, mapDispatchToProps)(Dashboard);
